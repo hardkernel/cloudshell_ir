@@ -24,21 +24,19 @@ During the installation LIRC will ask what type of IR Remote you have,
 answer None to all questions. I'll handle it for you" 0 0
 
 apt-get update
-apt-get -y dist-upgrade
 apt-get -y install lirc
 
 # Configure LIRC for ODROID Hardware
-hwconf=/etc/lirc/hardware.conf
-sed -i "s/^REMOTE_MODULES=.*/REMOTE_MODULES=\"gpio_ir_recv\"/g" $hwconf
-sed -i "s/^REMOTE_DRIVER=.*/REMOTE_DRIVER=\"default\"/g" $hwconf
-sed -i s/^REMOTE_DEVICE=.*/REMOTE_DEVICE=\""\/dev\/lirc0"\"/g $hwconf
-sed -i "s/^START_LIRCD=.*/START_LIRCD=\"true\"/g" $hwconf
-sed -i "s/^REMOTE_LIRCD_ARGS=.*/REMOTE_LIRCD_ARGS=\"--uinput\"/g" $hwconf
-
-# Add required modules to be loaded on boot.
-echo "options gpioplug_ir_recv gpio_nr=24 active_low=1" >> /etc/modprobe.d/odroid-cloudshell.conf
-echo "gpio-ir-recv" >> /etc/modules
-echo "gpioplug-ir-recv" >> /etc/modules
+hwconf=/etc/lirc/lirc_options.conf
+sed -i "s/^driver.*=.*/driver\t\t=\ default/g" $hwconf
+sed -i "s/^device.*=.*/device\t\t=\ \/dev\/lirc0/g" $hwconf
+sed -i "s/^.*modinit.*/[modinit]/g" $hwconf
+sed -i "s/^.*code\ .*=.*/code\ =\ \/sbin\/modprobe\ gpio-ir-recv/g" $hwconf
+sed -i "s/^.*code1\ .*=.*/code1\ =\ \/sbin\/modprobe\ gpioplug-ir-recv\ gpio_nr=24\ active_low=1/g" $hwconf
+sed -i "s/^.*lircd-uinput.*/[lircd-uinput]/g" $hwconf
+sed -i "s/^.*add-release-events.*=.*/add-release-events\ =\ True/g" $hwconf
+sed -i "s/^.*release-timeout.*=.*/release-timeout\ =\ 50/g" $hwconf
+sed -i "s/^.*release-suffix.*=.*/release-suffix\ =\ _EVUP/g" $hwconf
 
 whiptail --yesno "LIRC is partially configured.
 We don't have a Remote IR configured. 
@@ -48,7 +46,7 @@ I can configure for Hardkernel's default IR Remote
 Should I do it? (You can configure your own remote later)" 0 0 3>&1 1>&2 2>&3
 
 if [ $_t -eq 0 ]; then
-cat>/etc/lirc/lircd.conf<<__EOF
+cat>/etc/lirc/lircd.conf.d/lircd.conf<<__EOF
 begin remote
   name  odroid1.conf
   bits           16
@@ -84,7 +82,3 @@ fi
 
 whiptail --msgbox "We are done here.
 Please reboot for the changes take effect." 0 0
-
-
-
-
